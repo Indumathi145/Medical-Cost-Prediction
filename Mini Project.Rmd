@@ -1,5 +1,5 @@
 ---
-title: "Fitting the best subset regression model for house sale price and verifing the multicollinearity and all the model assumptions for fitted regression model"
+title: "Fitting the best subset regression model for medical expenses and verifing the multicollinearity and all the model assumptions for fitted regression model"
 author: "INDUMATHI S"
 date: "26/03/2021"
 output: word_document
