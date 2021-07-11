@@ -1,0 +1,477 @@
+---
+title: "Fitting the best subset regression model for house sale price and verifing the multicollinearity and all the model assumptions for fitted regression model"
+author: "INDUMATHI S"
+date: "26/03/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Abstract:
+
+   Now days, medical expenses is leading the main role in our life. We are spending more money on medical. We know that, life style and physical factors of the person impact the health condition. So, the medical expenses will depend on the some factors like age, bmi, smoking habit. In this analysis, we aims to find the linear relation between the medical expenses and others independent factors by using insurance dataset from kaggle which have & variables with 1338 observations and fit the model for them. The regression model can predict with 83% accuracy the charges. Also we aims to check the model adequacy to know whether the model is trust worthy or not. In analysis, we found that the normality assumption is violating which is an indication of an inadequate model. The violation of normality tells the non-linearity or outliers of the data. Therefore, the non-linear model may be suitable for this data. But this linear model is not adequate.
+
+# Introduction:
+
+  The expenditure of medical uses of the person is depended by many other factors of the person which include smoking, age and etc. To predicting the medical expenses based on other factors, we need to fit the linear model. Once we fit the model we have to check the goodness of fit and model adequacy. For checking the model adequacy, we should verify the existence of multicollinearity. If we model the multiple linear regression with more independent variables, then the independent variables might be dependent to each other i.e) one independent variable is explained by other independent variables. This is called 'multicollinearity'. If there exist the multicollinearity then we have to remove some highly dependent regressors. Variance influence factor(vif) is the measure of the amount of multicollinearity in a set of multiple regression variables. So using this vif, the highly dependent regressors can be removed. Then we should do the residual analysis. Residual analysis is verifying the assumptions of residuals. The assumptions of residuals is the residuals are uncorrelated with zero mean and constant variance with 1 and they are normally distributed. Constant variance is called an homoscedasticity. There is a test called studentized Breusch-Pagan test (bptest) for checking the homoscedasticity. We have the test called Shapiro-Wilk normality test for testing normality. There is a test called dwtest which is used to test the autocorrelation. Using these test and some plots, we can verify the assumptions of residuals. If the residuals are satisfied the assumptions of the residuals then the model will be trust worthy. So, we can predict the dependent variable by using the model which satisties the all assumptions of residuals.
+  
+# About Dataset:
+
+The dataset we use here is insurance dataset from kaggle which have 7 variables with 1338 observations. The dataset includes information about the insurance policy holder, their dependents, and their medical expenses throughout a year.
+
+Age: Age of primary policyholder.
+
+Sex: Sex of the policy policyholder.
+
+BMI: Body Mass Index of policyholder, defined as the body mass divided by the square of the body height (kg/m2).
+
+Smoker status: Whether the policyholder is a smoker or a non-smoker.
+
+Children: Number of children/dependents covered in the policy.
+
+Region of residence: Residential areas of the policy holder (in the US) - North East, South East, South West, North West.
+
+Charges: Yearly medical expenses billed by the medical insurance provider ($).
+
+Here, charges(Y) is depended on other variables.
+
+# Importing the dataset:
+
+```{r}
+library(readxl)
+data <- read_excel("D:/Second Sem/Regression Analysis/Dataset/insurance.xlsx")
+```
+
+```{r}
+attach(data)
+head(data)
+```
+
+# Dummy coding for categorical variables:
+
+  Dummy coding is probably the most commonly used coding scheme. It basically consists of creating dichotomous variables(nominal variable with 2 levels) where each level of the categorical variable is contrasted to a specified reference level.
+  
+   
+```{r}
+# creating the factor variable sex
+data$sex = factor(data$sex, labels=c("female","male"))
+
+```
+   
+   sex variable has 2 levels which are female and male. Automatically R itself choose first level as reference level. Here, female is the first level which is fixed as reference level and compare the mean of dependent variable(charges) for other level of sex male to the reference level of female as follows:
+   
+   sexmale = 0 if sex indicates female 
+   sexmale = 1 if sex indicates male (sexmale)
+
+```{r}
+# creating the factor variable children
+data$children = factor(data$children, labels=c(0,1,2,3,4,5))
+
+```
+
+```{r}
+# The contrast matrix for categorical variable with six levels
+contrasts(data$children)
+```
+  
+  children variable has 6 levels which are number of children in the family 0, 1, 2, 3, 4, 5. Here, 0 is the first level which is fixed as reference level and compare the mean of dependent variable(charges) for each level of children 1, 2, 3, 4 and 5 to the reference level of 0 as follows:
+  
+Level of children children.1 (0 vs. 1)	children.2 (0 vs.2)	children.3 (1 vs 3) children4 (0 vs 4) children5 (0 vs 5)
+
+  0 	                  0	                      0	                 0                      0                0
+  
+  1 	                  1	                      0	                 0                      0                0
+  
+  2 	                  0	                      1	                 0                      0                0
+  
+  3 	                  0	                      0	                 1                      0                0
+  
+  4                     0                       0                  0                      1                0
+  
+  5                     0                       0                  0                      0                1
+  
+
+```{r}
+# Creating the factor variable smoker
+data$smoker = factor(data$smoker, labels=c("no", "yes"))
+
+```
+
+```{r}
+# The contrast matrix for categorical variable with two levels
+contrasts(data$smoker)
+```
+
+   smoker variable has 2 levels which are no and yes. Here, no is the first level which is fixed as reference level and compare the mean of dependent variable(charges) for other level of yes to the reference level of no as follows:
+   
+   smokeryes = 0 if sex indicates no 
+   smokeryes = 1 if sex indicates yes 
+
+```{r}
+# creating the factor variable region
+data$region = factor(data$region, labels=c("northeast","northwest","southeast","southwest"))
+
+```
+
+  region variable (region of insurance holder) has 4 levels which are northeast, northwest, southeast, southwest. Here, northeast is the first level which is fixed as reference level and compare the mean of dependent variable(charges) for each level of region southeast, northwest, southwest to the reference level of northeast as follows:
+  
+Level of region region.northwest(NE vs. NW)	region.southeast(NE vs. SE)	region.southwest(NE vs. SW)  
+
+northeast(NE)	               0	                        0	                           0                      
+  
+northwest(NW)                1	                        0	                           0                      
+  
+southeast(SE)                0	                        1	                           0                      
+  
+southwest(SW)	               0	                        0	                           1   
+
+    
+# Backward elimination procedure for selecting the best model:
+
+```{r}
+fitall= lm(charges~., data=data)   # regression model with all variables
+
+```
+
+```{r}
+reg=step(fitall,direction="backward")
+reg
+```
+  
+  The less significantly contributing independent variable(sex) has been removed by backward elimination procedure.
+  
+   The final fitted model is charges = -11977.3 + 257.3*age + 336.4*bmi + 388.7*children1 + 1635.2*children2 + 963.0*children3 + 2938.6*children4 + 1106.4*children5 + 23824.2*smokeryes + (-379.4)*regionnorthwest + (-1032.4)*regionsoutheast + (-952.2)*regionsouthwest.
+   
+   The sign of regression coefficient tells about the linear relationship. Here, the coefficient of all variables except region are positive which tells that there exist the positive linear relationship between these independent variables & dependent variable(charges). the coefficient of region is negative which tells that there exists the negative linear relationship.
+   
+   The regression coefficient of age tells that the one unit of age increases and other independent variables is fixed then the average of charges will increase by 257.3 dollars.
+   
+   The regression coefficient of bmi tells that the one unit of bmi increases and other independent variables is fixed then the average of charges will increase by 336.4 dollars.
+  
+  The regression coefficient of children1 compares the mean of the charge for level of children 0 and 1. The expected difference in charges variable between level of children 0 and 1 is 388.7 dollars in other words, the difference between the mean of the charges for level 0 and the mean of the charges for level 1. A person with one children will increase the charges by 388.7 dollars when other variables are fixed. Like this, the estimated regression coefficient of children 2 is 1635.2 dollars which gives the expected difference in charges variable between level of children 0 and 2. A person with two children will increase the charges by 1635.2 dollars when other variables are fixed, The estimated regression coefficient of children 3 is 963.0 dollars which gives the expected difference in charges variable between level of children 0 and 3. A person with three children will increase the charges by 963.0 dollars when other variables are fixed, The estimated regression coefficient of children 4 is 2938.6 dollars which gives the expected difference in charges variable between level of children 0 and 4. A person with four children will increase the charges by 2938.6 dollars when other variables are fixed and The estimated regression coefficient of children 5 is 1106.4 dollars which gives the expected difference in charges variable between level of children 0 and 5. A person with five children will increase the charges by 1106.4 dollars when other variables are fixed 
+  
+  The regression coefficient of smoker yes compares the mean of the charges for level of no and yes. The expected difference in charges variable between level of yes and no is 23824.2 dollars in other words, the difference between the mean of the charges for level no the mean of the charges for level yes. A person be a smoker will increase the charges by 23847.5 dollars.
+  
+  The regression coefficient of region northwest compares the mean of the charge for level of region northeast and northwest. The expected difference in charges variable between level of region northeast and northwest is -379.4. A person living in the northwest might decrease the charges by 379.4 dollars. Like this, the estimated regression coefficient of region southeast is -1032.4 which gives the expected difference in charges variable between level of region northeast and southeast. A person living in the southeast might decrease the charges by 1032.4 dollars., The estimated regression coefficient of region southwest is -952.2 which gives the expected difference in charges variable between level of region northeast and southwest. A person living in the southwest might decrease the charges by 952.2 dollars.
+  
+# Multicollinearity:
+
+```{r}
+# Variance influence factor(vif):
+
+library(car)
+vif(reg)
+```
+  
+  variance influence factor (vif) is used to measure the amount of multicollinearity in the set of independent variables. The vif > 5 indicates that the associated independent variable is highly correlated with other independent variables in the model. If vif lies between 1 to 5 indicates that there is moderate correlation between the corresponding variable and other independent variables. The vif is equal to 1 indicates that there is no correlation between the corresponding variable and other independent variables.
+  
+  Here, vif of all the independent variables are less than 5. So, the final fitted model has the negligible multicollinearity. Therefore, the assumption of multicollinearity is satisfied.
+  
+  The final fitted model is Sale price of the charges ~ age + bmi + children + smoker + region.
+  
+```{r}
+# Goodness of fit: 
+
+summary(reg)
+```
+
+   we have obtained the adjusted R-square is 0.7498 which tells that 74% of charges is predicted by the independent variables(age, bmi, children, smoker, region). Therefore the model is good fit.
+  
+  Now, we have to verify the model assumptions of the final fitted model.
+  
+# Residual analysis:
+
+  In residual analysis, we have to verity all the properties or assumptions of residuals.
+The properties are:
+    i) The expected value of residual should be zero.
+    ii) The variance of residual should be 1 and constant.
+    iii) The residuals are normally distributed and uncorrelated.
+    
+```{r}
+fit<-fitted.values(reg)   # Fitted values
+res<-residuals(reg)       # Residuals of model with interaction term
+```
+
+  The plot of fitted value against residuals is used to find the nature of the variance. Here, we are going to find the nature of variance by using normal residual, standardized residual and studentised residual.
+
+  
+```{r}
+#(i) Scatter plot of fitted values against the residuals
+plot(fit,res)
+abline(0,0)
+```
+   We know that If the plot of fitted vs residual is scatter then the variance is constant and linear or if the plot has funnel shape then the variance is non constant but linear. If the plot has oval shape (curve) then the variance is non constant and also non-linear. Here, We can clearly see that, the points are following curve pattern. Therefore the variance of the residuals is not constant and the curve plot indicates the non-linearity.
+
+```{r}
+# To see the curve pattern
+residualPlot(reg)
+```
+    
+   The presence of a curve in the residual plot imply a problem with the linear assumption of the model. Since the residual plot of fitted values versus the residuals looks like curve, the model can be the non-linear. There are a various of reasons why a model can have this problem. The possibilities include a missing of:
+
+  i) Independent variable.
+  ii) Polynomial term to model a curve.
+  iii) Interaction term - An interaction effect exists when the effect of an independent variable on a dependent variable changes, depending on the value(s) of one or more other independent variables.
+  
+  To fix the problem, we need to identify the missing information, variable, or higher-order term and include it in the model. After we correct the problem and refit the model, the residuals should look random.
+
+  In our dataset, we can see the interaction that a person who smokes and has a high bmi may have higher charges as compared to a person who has lower bmi and is a non-smoker that is, the relationship between charges and bmi depends on the smoking habit. To see this interaction visually:
+  
+```{r}
+# Interaction Plot
+
+library(ggplot2)
+```
+
+```{r}
+ggplot(data,aes(bmi,charges,linetype=smoker))+
+    geom_smooth(method="lm",se=FALSE)
+```
+  To understand interaction effects, we have to compare the lines from the interaction plot. If the lines are parallel, there is no interaction. If the lines are not parallel, there is an interaction. Here, we can clearly see that the lines are not parallel that is, there is interaction between bmi and smoker. 
+  
+  Since there is interaction between bmi and smoker, we have to refit the model with interaction term.
+  
+```{r}
+# Refitting the linear model with interaction term
+
+reg_int = lm(charges ~ age + children + bmi + smoker + region + bmi*smoker, data=data)  # bmi*smoker is the interaction term
+```
+  
+```{r}
+# Confidence intervel for regression coefficient:
+
+confint(reg_int,level = 0.95)
+```
+   This confidence intervel tells that 95% sure about the true value of regression coefficient of indepandent variables lie in the respective intervals. 
+  
+```{r}
+# Predicting the dependent variable(Charges)
+
+pred_var = predict(reg_int, data)
+head(pred_var)
+head(data)
+```
+  
+  This values give the predicted values of response values of medical charges with respect to independent variables of first six observations.
+  
+```{r}
+pi<-predict(reg_int,data,interval="confidence",level=0.95)
+head(pi)
+```
+  
+  We know that, our prediction is based on fitted regression model. lower bound and upper bound is about the response variable. The fitted value is the response variable (charges) with independent variables for first six observations. This interval tells that 95% confidence that the true value of the fitted value lie between this intervals.
+
+```{r}
+# Goodness of fit with interaction term
+summary(reg_int)
+```
+
+After fitting the model with interaction term, we have obtained the multiple R-square is 0.8397 which is higher than the R square of model without interaction term and it tells that 84% of medical charges of the patient is predicted by the independent variables. Therefore, the model is good fit.
+   
+```{r}
+# Plots for the regression model with interaction term
+plot(reg_int)     
+```
+
+1.Residuals vs fitted -> used to check the linear relationship assumptions. Red line is horizontal in the graph i.e)
+there are no distinct patterns. Therefore, this is an indication for linear relationship 
+
+2. Normal Q-Q -> used to determine whether the residuals are normally distributed.
+We can see that the residuals points don't follow straight line. Therefore, the residuals are not normally distributed.
+
+3. Scale-location(or spread-location) is used to to check whether the residuals are spread along with the range of predicted value that is called homoscedasticity. If the plot has the horizontal line which indicates that the points are distributed randomly above and below the line then we can say that there is homoscedasticity. But in our plot, there is horizontal line so that means the points are equally spared. So, there is homoscedasticity. Therefore, the assumption on constant variance of residuals is satisfied.
+
+4. Residuals vs Leverage -> is used for identifying influential points, there are some points with number in this plot. that points might impact the regression results when included or excluded from the analysis.
+
+
+```{r}
+residualPlot(reg_int)
+```
+
+```{r}
+fit1<-fitted.values(reg_int)  # Fitted values of the model with interaction term
+res1<-residuals(reg_int)      # Residuals of the model with interaction term
+```
+
+```{r}
+#(ii)standardized residuals
+stdres1<-rstandard(reg_int)
+
+#scatter plot of fitted values against standardized residual 
+plot(fit1,stdres1)
+abline(0,0)
+```
+Here, we didn't see any pattern followed by the residuals. Therefore, there is linear relationship. Also, we know that if any standardized residuals is greater than absolute value of 3, then it might indicate an outlier. That particular value is outlier. From this graph, we can see that there are many points are greater than absolute value of 3. So they may be the outliers.
+
+```{r}
+#(iii)studendized residuals
+stures1<-rstudent(reg_int)
+
+#scatter plot of fitted values against the studendized residual 
+plot(fit1,stures1)
+abline(0,0)
+```
+    Here, we didn't see any pattern followed by the residuals. Therefore, there is linear relationship. Also, we know that if any studendized residuals is greater than absolute value of 3, then it might indicate an outlier. That particular value is outlier. From this graph, we can see that there are many points are greater than absolute value of 3. So they may be the outliers.
+    
+  From scale location plot, we can find that variance is constant. But for more clarity, we can use bptest for homoscedasticity.
+
+# Test for homoscedasticity (constant variance):
+
+```{r}
+library(lmtest)
+bptest(reg_int)
+```
+    
+  Null hypothesis H0 : There is an homoscedasticity (constant variance)
+  Alternative hypothesis H1 : There is no homoscedasticity
+    
+  Since p value is greater than the significant level 0.05, we can accept the null hypothesis that is there is an homoscedasticity. Therefore, residuals has the constant variance.
+  
+```{r}
+# variance of standardized residuals
+var(stdres1)  
+
+# variance of studendized residuals
+var(stures1)
+```
+  Here, the variance of the standardized and studendized residuals are approximately 1. Therefore, the assumption of variance that is the variance of residual should be 1 have been verified.
+
+```{r}
+# mean of standardized residuals
+mean(stdres1)  
+
+#mean of studendized residuals
+mean(stures1)
+```
+  Here the expected values of standardized and studendized residuals are approximately 0 which satisfies the mean assumption of residuals.
+
+# To check the normality assumption:
+
+```{r}
+# Normality Plot
+qqnorm(res1)
+qqline(res1)
+```
+   The normal QQ plot is used to check the normality of residuals. The most of the points are not lying on the straight line which indicates the residuals are not normally distributed. 
+   
+```{r}
+# normality test
+shapiro.test(res1)
+```
+
+  Null hypothesis H0: The residuals are normally distributed 
+   
+  Alternative hypothesis H1: The residuals are not normally distributed
+  
+   Since p value is less than the significant level 0.05, there is no evidence to accept the null hypothesis. Therefore by the alternative hypothesis, the residuals are normally distributed.
+   
+```{r}
+# Box cox transformation
+
+library(MASS)
+b = boxCox(reg_int)
+```
+
+```{r}
+lambda <- b$x # lambda values
+
+lik <- b$y # log likelihood values for SSE
+
+bc <- cbind(lambda, lik) # combine lambda and likelihood values
+
+sorted_bc <- bc[order(-lik),] # values are sorted to identify the lambda value for the maximum log likelihood for obtaining minimum SSE
+
+head(sorted_bc, n = 10)
+```
+
+```{r}
+# Model fitting (After transformation)
+
+lambda = 0.2626263
+reg_box = lm(charges^(lambda) ~ age + children + bmi + smoker +region + bmi*smoker)
+
+```
+
+```{r}
+res_b =resid(reg_box)  # residuals of the model after transformation
+qqnorm(res_b)
+qqline(res_b)
+```
+   After transformation also, there is no changes in the QQ plot that is the most of the points are not lying on the straight line which indicates the residuals are not normally distributed. 
+   
+```{r}
+# normality test after box cox transformation
+
+shapiro.test(res1)
+```
+
+  Null hypothesis H0: The residuals are normally distributed 
+   
+  Alternative hypothesis H1: The residuals are not normally distributed
+  
+   Since p value is less than the significant level 0.05, we reject the null hypothesis. Therefore by the alternative hypothesis, the residuals are not normally distributed. 
+   
+   We can see that after transformation also we are getting same p value. So the residuals are not normally distributed which is violating the normality assumption on residuals.
+
+# To check whether the residuals are uncorrelated:
+
+```{r}
+acf(res1)
+```
+   
+   In this graph, X axis is lags, Y axis is correlation and blue line is threshold line. The correlation of residual in different lags are plotted here. If the correlation of any lag is less than the threshold line then that correlation is negligible i.e) there is no correlation in that lag. But the correlation in lag 0 is always one because that indicates correlation of any lag itself. In our graph, There are no correlation lies outside the threshold line that is, correlation of all lags are negligible. Therefore the residuals are uncorrelated which satisfies the assumption on uncorrelated residuals. 
+ 
+```{r}
+# Test for autocorrelation:
+dwtest(reg_int)
+```
+  
+   Null hypothesis H0 : true autocorrelation is equal to 0
+   Alternative hypothesis H1 : true autocorrelation is greater than 0
+   
+  Since the p value is greater than the significant level 0.05, we have to accept the null hypothesis. So by null hypothesis, we can say that the residuals are uncorrelated that is assumption on uncorrelated residuals is satisfied. 
+
+# Conclusion:
+
+  Since medical expenses depended on some factors of the person, we had analyzed the medical expenses based on their age, region, bmi, smoking habit and the number of children they have using multiple linear regression. In our dataset, we had four categorical variables. Before fitting the model, we have converted the those variables to factors, because R may not understand which are the categorical variables. 
+  After converting the categorical variables to factors, we have selected the significant independent variables for fitting the best model using backward elimination. Only variable sex has been removed from model. The fitted model is charges = -11977.3 + 257.3*age + 336.4*bmi + 388.7*children1 + 1635.2*children2 + 963.0*children3 + 2938.6*children4 + 1106.4*children5 + 23824.2*smokeryes + (-379.4)*regionnorthwest + (-1032.4)*regionsoutheast + (-952.2)*regionsouthwest. Here, the coefficient of all variables except region are positive which tells that there exist the positive linear relationship between these independent variables & dependent variable(charges). the coefficient of region is negative which tells that there exists the negative linear relationship. For estimated model coefficients, it tells how much the amount of medical cost varies with one coefficient while other variables are held constant.
+  
+   i) A unit increase in age will increase the charges by 256.8 dollars when other variables are fixed.
+ 
+   ii) A person be a male will decrease the charges by 131.3 dollars when other variables are fixed.
+
+   iii) A unit increase in bmi will increase the charges by 339.3 dollars when other variables are fixed.
+
+   iv) A person make one children will increase the charges by 475.7 dollars when other variables are fixed. A person make two children will increase the charges by 475.7 dollars when other variables are fixed. A person make three children will increase the charges by 475.7 dollars when other variables are fixed. A person make four children will increase the charges by 475.7 dollars when other variables are fixed. A person make five children will increase the charges by 475.7 dollars when other variables are fixed.
+
+   v) A person be a smoker will increase the charges by 23847.5 dollars when other variables are fixed.
+
+   vi) A person living in the southwest might decrease the charges by 1035.6 dollars when other variables are fixed. A person living in the northwest might decrease the charges by 352.8 dollars when other variables are fixed. A person living in the southeast might decrease the charges by 1035.6 dollars when other variables are fixed.
+  
+   While checking the multicollinearity, vif of all the independent variables are less than 5. So, the fitted model has the negligible multicollinearity. Therefore, the assumption on non-multicollinearity of residuals is satisfied.
+  
+  The final fitted model is the charges ~ age + bmi + children + smoker + region. For this model, we have obtained the adjusted R-square is 0.7498 which tells that 74% of medical charges of the person is predicted by the independent variables(age, bmi, children, smoker, region). Therefore the model is good fit.
+  
+   we also checked the model adequacy. For checking the model adequacy, we did the residual analysis.
+  
+   From the residual vs fitted plot, we have seen that, the points were following curve pattern(oval). Therefore the variance of the residuals is not constant and the curve plot also indicates the non-linearity. To fix the non-linearlity problem, we have needed to identify the missing information, variable, or higher-order term and include it in the model. In our dataset, we could see the interaction that is a person who smokes and has a high bmi may have higher charges as compared to a person who has lower bmi and is a non-smoker that is, the relationship between charges and bmi depends on the smoking habit. Since there is interaction between bmi and smoker, we have refitted the model with interaction term (bmi*smoker). The refitted model is charges ~ age + children + bmi + smoker + region + bmi * smoker. After fitting the model with interaction term, we have obtained the multiple R-square is 0.8397 which is higher than the R square of model without interaction term and it tells that 84% of medical charges of the patient is predicted by the independent variables. Therefore, the model is good fit.
+   
+   After refitted the model with interaction term, For checking the model adequacy, we did the residual analysis for checking the model adequacy. 
+
+  1) Non-linearity -> From residuals vs fitted plot red line is horizontal in the graph i.e) there are no distinct patterns. Therefore, this is an indication for linear relationship. And from standardized residuals vs fitted values plot, we didn't see any pattern followed by the residuals. Therefore, there is linear relationship. Also, we could see that there are many points are greater than absolute value of 3. So that points might be the outliers.
+  
+  2) Assumption on zero mean and unity variance -> The expected values of standardized and studendized residuals are approximately 0 which satisfied the mean assumption of residuals. The variance of the standardized and studendized residuals are approximately 1. Therefore, the assumption of variance that is the variance of residual should be 1 have been verified.
+
+   3) Assumption on constant variance -> From scale-location(or spread-location), here is horizontal line so that means the points are equally spared. So, there is homoscedasticity. And also from bp test, since p value is greater than the significant level 0.05, we can accept the null hypothesis that is there is an homoscedasticity. Therefore, the assumption on constant variance of residuals is satisfied.
+ 
+   4) Assumption on normality -> From the normal QQ plot, The most of the points didn't follow the straight line which indicates the residuals are not normally distributed. And also from sharpio wilk normality test, since p value is less than the significant level 0.05, there is no evidence to accept the null hypothesis. So by the alternative hypothesis, the residuals are normally distributed. Therefore, the assumption on normality of residuals was violated. 
+ 
+  5) Box cox transformation -> For fixing the normality problem, we have done the box cox transformation and refitted the model. After box cox transformation also, there is no changes in the QQ plot that is the most of the points didn't follow the straight line which indicates the residuals are not normally distributed. We also could see that we were getting the same p value. So the residuals are not normally distributed which is violating the normality assumption of residuals.
+
+  6) Assumption on uncorrelated residuals -> From autocorrelation plot, there is no correlation lies outside the threshold line that is, correlation of all lags are negligible. From dwtest, Since the p value is greater than the significant level 0.05, we have to accept the null hypothesis. So by null hypothesis, we can say that the residuals are uncorrelated. Therefore the residuals are uncorrelated which satisfies the assumption on uncorrelated residuals. 
+  
+  From the analysis, we found that the goodness of fit is good  but the normality assumption is violating which is an indication of an inadequate model. The violation of normality tells the non-linearity or outliers of the data. So, Further we can try the non-linear model for the getting better for this medical expenses.
+
+
